@@ -2,3 +2,4 @@ flask
 openai
 python-dotenv
 gunicorn
+stripe
