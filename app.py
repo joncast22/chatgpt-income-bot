@@ -21,11 +21,12 @@ stripe.api_key = STRIPE_SECRET_KEY
 
 app = Flask(__name__)
 
-# API Key Management
-API_KEYS = {
-    "business1": "your_api_key_12345",
-    "business2": "your_api_key_67890",
-}
+# API Key Management - Store dynamically assigned API keys
+API_KEYS = {}
+
+# Function to generate new API key
+def generate_api_key():
+    return secrets.token_hex(16)
 
 # Home route to check if bot is running
 @app.route("/", methods=["GET"])
@@ -52,11 +53,21 @@ def subscribe():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-# Payment Success Route
+# Payment Success Route - Assigns API Key
 @app.route("/subscription_success", methods=["GET"])
 def subscription_success():
     session_id = request.args.get("session_id")
-    return jsonify({"message": "Subscription successful!", "session_id": session_id})
+    session = stripe.checkout.Session.retrieve(session_id)
+    customer_email = session.customer_email  # Retrieve customer email from Stripe
+    
+    if not customer_email:
+        return jsonify({"error": "Could not retrieve customer email."}), 400
+    
+    # Generate and store API key
+    api_key = generate_api_key()
+    API_KEYS[customer_email] = api_key
+    
+    return jsonify({"message": "Subscription successful!", "api_key": api_key})
 
 # Chatbot API (Only for Paid Users)
 @app.route("/chat", methods=["GET", "POST"])
