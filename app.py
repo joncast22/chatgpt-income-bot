@@ -1,6 +1,7 @@
 import openai
 import os
 import stripe
+import secrets
 from flask import Flask, request, jsonify, url_for
 from dotenv import load_dotenv
 from twilio.rest import Client
@@ -19,6 +20,12 @@ twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 stripe.api_key = STRIPE_SECRET_KEY
 
 app = Flask(__name__)
+
+# API Key Management
+API_KEYS = {
+    "business1": "your_api_key_12345",
+    "business2": "your_api_key_67890",
+}
 
 # Home route to check if bot is running
 @app.route("/", methods=["GET"])
@@ -82,6 +89,29 @@ def chat():
                   {"role": "user", "content": user_message}],
         temperature=0.7
     )
+    return jsonify({"response": response['choices'][0]['message']['content']})
+
+# API Endpoint for Businesses (API Key Required)
+@app.route("/api/chat", methods=["POST"])
+def api_chat():
+    api_key = request.headers.get("X-API-KEY")
+    
+    if api_key not in API_KEYS.values():
+        return jsonify({"error": "Unauthorized. Get an API key at yoursite.com"}), 401
+    
+    data = request.json
+    user_message = data.get("message", "")
+    
+    if not user_message:
+        return jsonify({"error": "Message is required"}), 400
+    
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[{"role": "system", "content": "You are a helpful AI assistant."},
+                  {"role": "user", "content": user_message}],
+        temperature=0.7
+    )
+    
     return jsonify({"response": response['choices'][0]['message']['content']})
 
 # WhatsApp Chatbot API
