@@ -15,10 +15,10 @@ TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 TWILIO_WHATSAPP_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER")
 
-app = Flask(__name__)
-
-stripe.api_key = STRIPE_SECRET_KEY
 twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+stripe.api_key = STRIPE_SECRET_KEY
+
+app = Flask(__name__)
 
 # Home route to check if bot is running
 @app.route("/", methods=["GET"])
@@ -52,10 +52,12 @@ def subscription_success():
     return jsonify({"message": "Subscription successful!", "session_id": session_id})
 
 # Chatbot API (Only for Paid Users)
-@app.route("/chat", methods=["POST"])
+@app.route("/chat", methods=["GET", "POST"])
 def chat():
-    session_id = request.args.get("session_id")
+    if request.method == "GET":
+        return jsonify({"message": "Use POST to chat!"})
 
+    session_id = request.args.get("session_id")
     if not session_id:
         return jsonify({"error": "Subscription required. Visit /subscribe to sign up."}), 402
 
@@ -83,8 +85,11 @@ def chat():
     return jsonify({"response": response['choices'][0]['message']['content']})
 
 # WhatsApp Chatbot API
-@app.route("/whatsapp", methods=["POST"])
+@app.route("/whatsapp", methods=["GET", "POST"])
 def whatsapp():
+    if request.method == "GET":
+        return jsonify({"message": "Use POST to send WhatsApp messages!"})
+
     data = request.json
     user_message = data.get("message", "")
 
