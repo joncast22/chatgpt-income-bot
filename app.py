@@ -8,15 +8,19 @@ load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# Initialize Flask app
 app = Flask(__name__)
 
+# Home route to check if bot is running
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({"message": "Chatbot is running!"})
 
-@app.route("/chat", methods=["POST"])
+# Add GET support for testing
+@app.route("/chat", methods=["GET", "POST"])
 def chat():
+    if request.method == "GET":
+        return jsonify({"message": "Use POST to chat!"})
+
     data = request.json
     user_message = data.get("message", "")
 
@@ -33,4 +37,3 @@ def chat():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-
